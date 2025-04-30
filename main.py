@@ -14,7 +14,32 @@ class Game:
 
         self.clock = pygame.time.Clock()
         screen_instance = System.Screen(1600, 800)
-        self.screen = pygame.display.set_mode(screen_instance.size)
+        self.display = pygame.display.set_mode(screen_instance.size)
 
         self.inGame = True
+
+        self.prevTime = time.time()
+
+    def reset(self):
+        pass
         
+    def title(self):
+        pass
+
+    def update(self, deltaTime):
+        pass
+
+    def run(self):
+        while self.inGame:
+            now = time.time()
+            deltaTime = now - self.prevTime
+            self.prevTime = now
+            
+            self.display.fill(System.Color.white)
+            self.update(deltaTime)
+
+            pygame.display.update()
+
+if __name__ == "__main__":
+    game = Game()
+    game.run()
