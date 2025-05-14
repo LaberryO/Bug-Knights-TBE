@@ -20,6 +20,9 @@ class Game:
 
         self.prevTime = time.time()
 
+        self.images = {}
+        self.monsters = {}
+
     def reset(self):
         pass
 
@@ -76,9 +79,9 @@ class Game:
         from Resource.Data import title_data
         self.display.fill(System.Color.white)
 
-        mousePos = pygame.mouse.get_pos();
-
-        titleText = self.titleFont.render(title_data.titleTexts, True, System.Color.black)
+        mousePos = pygame.mouse.get_pos()
+        image = self.images["title_0"]
+        titleText = pygame.transform.scale(image, (image.get_width() * 2, image.get_height() * 2))
         self.display.blit(titleText, (self.screen.centerX - titleText.get_width() // 2, self.screen.centerY // 2 - titleText.get_height() // 2))
 
         buttonTexts = title_data.buttonTexts
@@ -121,7 +124,6 @@ class Game:
                             case 1:
                                 self.state = "gameInfo"
                             case 2:
-                                print("quit")
                                 self.state = "quit"
 
     def calculateDeltaTime(self):
@@ -131,7 +133,24 @@ class Game:
         return deltaTime
     
     def game(self):
+        self.handleEvents()
+
+        self.display.blit(pygame.transform.scale(self.images["background_0"], self.screen.size), (0, 0))
+        self.update(self.deltaTime)
+        self.player.draw(self.display, self.deltaTime)
+        self.monsters["slime"].draw(self.display, self.deltaTime)
+
+        pygame.display.update()
+
+    def update(self, deltaTime):
         pass
+
+    def handleEvents(self):
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                self.inGame = False
+                pygame.quit()
+                sys.exit()
 
     def gameOver(self):
         pass
@@ -140,6 +159,8 @@ class Game:
         pass
 
     def run(self):
+        self.load()
+
         self.state = "title"
         while self.inGame:
             self.deltaTime = self.calculateDeltaTime()
@@ -157,8 +178,30 @@ class Game:
 
             pygame.display.update()
 
-    def update(self):
-        pass
+    def load(self):
+        folder_path = "Resource/Images"
+        for filename in os.listdir(folder_path):
+            self.loadingScreen()
+            if filename.lower().endswith(".png"):
+                image_path = os.path.join(folder_path, filename)
+                filename = filename.split(".")[0]
+                try:
+                    image = pygame.image.load(image_path)
+                    self.images[filename] = image
+                    print(f"Image Load Complete: {filename}")
+                except pygame.error:
+                    print(f"Image Load Failed: {filename}")
+            time.sleep(0.02)
+        self.monsters["fboss"] = Entity.Fboss(self.screen, self.images)
+        self.monsters["slime"] = Entity.Slime(self.screen, self.images)
+        self.player = Entity.Player(self.screen, self.images)
+
+    def loadingScreen(self):
+        self.display.fill(System.Color.white)
+        loadText = self.titleFont.render("Loading...", True, System.Color.black)
+        self.display.blit(loadText, (self.screen.centerX - loadText.get_width() // 2, self.screen.centerY - loadText.get_height() // 2))
+
+        pygame.display.flip()
 
 if __name__ == "__main__":
     pygame.init()
