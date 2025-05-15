@@ -1,4 +1,4 @@
-import os, pygame, sys, time, random;
+import os, pygame, sys, time, random;   
 import pygame.locals;
 
 from Resource import Entity
@@ -24,7 +24,10 @@ class Game:
         self.monsters = {}
 
     def reset(self):
-        pass
+        self.monsters = {}
+        self.monsters["fboss"] = Entity.Fboss(self.screen, self.images)
+        self.monsters["slime"] = Entity.Slime(self.screen, self.images)
+        self.player = Entity.Player(self.screen, self.images)
 
     def createButtons(self, buttonTexts, mousePos, x, y, facing):
         buttons = []
@@ -135,10 +138,10 @@ class Game:
     def game(self):
         self.handleEvents()
 
-        self.display.blit(pygame.transform.scale(self.images["background_0"], self.screen.size), (0, 0))
+        self.display.blit(pygame.transform.scale(self.images["bossbackground_0"], self.screen.size), (0, 0))
         self.update(self.deltaTime)
         self.player.draw(self.display, self.deltaTime)
-        self.monsters["slime"].draw(self.display, self.deltaTime)
+        self.monsters["fboss"].draw(self.display, self.deltaTime)
 
         pygame.display.update()
 
@@ -192,9 +195,7 @@ class Game:
                 except pygame.error:
                     print(f"Image Load Failed: {filename}")
             time.sleep(0.02)
-        self.monsters["fboss"] = Entity.Fboss(self.screen, self.images)
-        self.monsters["slime"] = Entity.Slime(self.screen, self.images)
-        self.player = Entity.Player(self.screen, self.images)
+        self.reset()
 
     def loadingScreen(self):
         self.display.fill(System.Color.white)
