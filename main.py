@@ -23,6 +23,9 @@ class Game:
         self.images = {}
         self.monsters = {}
 
+        self.turn = "player_turn"
+        self.stage = ""
+
     def reset(self):
         self.monsters = {}
         self.monsters["fboss"] = Entity.Fboss(self.screen, self.images)
@@ -138,10 +141,18 @@ class Game:
     def game(self):
         self.handleEvents()
 
-        self.display.blit(pygame.transform.scale(self.images["bossbackground_0"], self.screen.size), (0, 0))
+        if self.stage == "fboss":
+            background = "bossbackground_0"
+            monster = "fboss"
+        else:
+            background = "background_0"
+            monster = "slime"
+
+
+        self.display.blit(pygame.transform.scale(self.images[background], self.screen.size), (0, 0))
         self.update(self.deltaTime)
         self.player.draw(self.display, self.deltaTime)
-        self.monsters["fboss"].draw(self.display, self.deltaTime)
+        self.monsters[monster].draw(self.display, self.deltaTime)
 
         pygame.display.update()
 
