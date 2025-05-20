@@ -31,55 +31,69 @@ class Game:
         self.monsters["fboss"] = Entity.Fboss(self.screen, self.images)
         self.monsters["slime"] = Entity.Slime(self.screen, self.images)
         self.player = Entity.Player(self.screen, self.images)
+        self.display = pygame.display.set_mode(self.screen.size)
 
-    def createButtons(self, buttonTexts, mousePos, x, y, facing):
+    def createButtons(self, buttonTexts, mousePos, x, y, facing, maxPerRow):
         buttons = []
-        btnWidth = 250
-        btnHeight = 60
+        btnWidth = int(self.screen.width * 0.15625)
+        btnHeight = int(self.screen.height * 0.06666)
         spacing = 20  # 버튼 간격
 
-        totalWidth = len(buttonTexts) * btnWidth + (len(buttonTexts) - 1) * spacing
-        totalHeight = len(buttonTexts) * btnHeight + (len(buttonTexts) - 1) * spacing
-
         if facing == "horizontal":
-            startX = x - (totalWidth // 2)
+            rows = (len(buttonTexts) + maxPerRow - 1) // maxPerRow  # 필요한 줄 수
+            totalHeight = rows * btnHeight + (rows - 1) * spacing
+            startY = y - (totalHeight // 2)
+
             for i, text in enumerate(buttonTexts):
-                btnRect = pygame.Rect(startX + i * (btnWidth + spacing), y - btnHeight // 2, btnWidth, btnHeight)
+                row = i // maxPerRow
+                col = i % maxPerRow
+
+                totalWidth = maxPerRow * btnWidth + (maxPerRow - 1) * spacing
+                startX = x - (totalWidth // 2)
+
+                btnX = startX + col * (btnWidth + spacing)
+                btnY = startY + row * (btnHeight + spacing)
+
+                btnRect = pygame.Rect(btnX, btnY, btnWidth, btnHeight)
                 isHover = btnRect.collidepoint(mousePos)
                 bgColor = System.Color.gray if isHover else System.Color.white
                 textColor = System.Color.white if isHover else System.Color.black
 
                 btnSurface = self.defaultFont.render(text, True, textColor)
                 button = {
-                    "id": i,                # 버튼 고유값 (인덱스)
-                    "rect": btnRect,        # 버튼 위치와 크기
-                    "text": text,           # 버튼 텍스트
-                    "bgColor": bgColor,     # 버튼 배경색
-                    "textColor": textColor, # 버튼 텍스트 색상
-                    "surface": btnSurface   # 버튼 렌더링 표면
+                    "id": i,
+                    "rect": btnRect,
+                    "text": text,
+                    "bgColor": bgColor,
+                    "textColor": textColor,
+                    "surface": btnSurface
                 }
                 buttons.append(button)
 
         elif facing == "vertical":
+            totalHeight = len(buttonTexts) * btnHeight + (len(buttonTexts) - 1) * spacing
             startY = y - (totalHeight // 2)
+
             for i, text in enumerate(buttonTexts):
-                btnRect = pygame.Rect(x - btnWidth // 2, startY + i * (btnHeight + spacing), btnWidth, btnHeight)
+                btnY = startY + i * (btnHeight + spacing)
+                btnRect = pygame.Rect(x - btnWidth // 2, btnY, btnWidth, btnHeight)
                 isHover = btnRect.collidepoint(mousePos)
                 bgColor = System.Color.gray if isHover else System.Color.white
                 textColor = System.Color.white if isHover else System.Color.black
 
                 btnSurface = self.defaultFont.render(text, True, textColor)
                 button = {
-                    "id": i,                # 버튼 고유값 (인덱스)
-                    "rect": btnRect,        # 버튼 위치와 크기
-                    "text": text,           # 버튼 텍스트
-                    "bgColor": bgColor,     # 버튼 배경색
-                    "textColor": textColor, # 버튼 텍스트 색상
-                    "surface": btnSurface   # 버튼 렌더링 표면
+                    "id": i,
+                    "rect": btnRect,
+                    "text": text,
+                    "bgColor": bgColor,
+                    "textColor": textColor,
+                    "surface": btnSurface
                 }
                 buttons.append(button)
 
         return buttons
+
 
     def title(self):
         from Resource.Data import title_data
@@ -96,7 +110,8 @@ class Game:
             mousePos, 
             self.screen.centerX, 
             self.screen.height - self.screen.centerY // 2, 
-            "horizontal"
+            "horizontal",
+            4
         )
         
         for button in buttons:
@@ -130,6 +145,8 @@ class Game:
                             case 1:
                                 self.state = "gameInfo"
                             case 2:
+                                self.state = "gameSettings"
+                            case 3:
                                 self.state = "quit"
 
     def calculateDeltaTime(self):
@@ -137,6 +154,69 @@ class Game:
         deltaTime = now - self.prevTime
         self.prevTime = now
         return deltaTime
+    
+    def gameSettings(self):
+        from Resource.Data import settings_data
+        self.display.fill(System.Color.white)
+
+        mousePos = pygame.mouse.get_pos()
+        image = self.images["settings_0"]
+        imageSurface = pygame.transform.scale(image, (self.display.get_width(), self.display.get_height()))
+        self.display.blit(imageSurface, (0, 0))
+
+        buttonTexts = settings_data.buttonTexts
+        buttons = self.createButtons(
+            buttonTexts, 
+            mousePos, 
+            self.screen.centerX, 
+            self.screen.centerY, 
+            "horizontal",
+            4
+        )
+        
+        for button in buttons:
+            rect = button["rect"]
+            bgColor = button["bgColor"]
+            surface = button["surface"]
+
+            if button["id"] == 3:
+                bgColor = System.Color.redorange
+
+            # 버튼 배경 그리기
+            pygame.draw.rect(self.display, bgColor, rect, border_radius=10)
+            # 버튼 테두리 그리기 (검정색)
+            pygame.draw.rect(self.display, System.Color.black, rect, 3, border_radius=10)
+
+            # 텍스트 렌더링
+            self.display.blit(
+                surface, 
+                (
+                    rect.centerx - surface.get_width() // 2,
+                    rect.centery - surface.get_height() // 2
+                )
+            )
+        
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                self.inGame = False
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                for button in buttons:
+                    if button["rect"].collidepoint(event.pos):
+                        match button["id"]:
+                            case 0:
+                                self.screen.width = 1920
+                                self.screen.height = 1080
+                                self.reset()
+                            case 1:
+                                self.screen.width = 1600
+                                self.screen.height = 900
+                                self.reset()
+                            case 2:
+                                self.screen.width = 1280
+                                self.screen.height = 720
+                                self.reset()
+                            case 3:
+                                self.state = "title"
     
     def game(self):
         self.handleEvents()
@@ -187,6 +267,8 @@ class Game:
                 self.gameOver()
             elif self.state == "gameInfo":
                 self.gameInfo()
+            elif self.state == "gameSettings":
+                self.gameSettings()
             elif self.state == "quit":
                 break
 

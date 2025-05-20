@@ -5,3 +5,5 @@ class Color:
     white = (255, 255, 255)
     black = (0, 0, 0)
     gray = (128, 128, 128)
+    aquablue = (2, 216, 233)
+    redorange = (255, 75, 51)
