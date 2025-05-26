@@ -417,13 +417,34 @@ class Game:
     def gameOver(self):
         pass
 
+    def midTextRender(self, text, addY):
+        self.display.blit(text, (
+            self.screen.centerX - text.get_width() // 2,
+            self.screen.centerY + addY
+        ));
+
     def gameInfo(self):
+        from Resource.Data import info_data
+
         self.display.fill(System.Color.white)
+
+        tempY = -270;
+        for i in range(len(info_data.infoTexts)):
+            text = self.defaultFont.render(info_data.infoTexts[i], True, System.Color.black);
+            if i == 2 or i == 8:
+                tempY += 90;
+            else:
+                tempY += 40;
+            self.midTextRender(text, tempY);
+        
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 self.inGame = False
                 pygame.quit()
                 sys.exit()
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_ESCAPE:
+                    self.state = "title"
 
     def run(self):
         self.load()
