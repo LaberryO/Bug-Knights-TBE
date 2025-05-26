@@ -418,7 +418,12 @@ class Game:
         pass
 
     def gameInfo(self):
-        pass
+        self.display.fill(System.Color.white)
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                self.inGame = False
+                pygame.quit()
+                sys.exit()
 
     def run(self):
         self.load()
