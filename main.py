@@ -13,6 +13,7 @@ class Game:
         self.clock = pygame.time.Clock()
         self.screen = System.Screen(1600, 800)
         self.display = pygame.display.set_mode(self.screen.size)
+        self.fullscreen = False
 
         self.inGame = True
         self.defaultFont = pygame.font.Font("Resource/Font/GowunDodum-Regular.ttf", 24)
@@ -22,6 +23,7 @@ class Game:
 
         self.images = {}
         self.monsters = {}
+        self.effects = []
 
         self.turn = "player_turn"
         self.stage = ""
@@ -31,7 +33,10 @@ class Game:
         self.monsters["fboss"] = Entity.Fboss(self.screen, self.images)
         self.monsters["slime"] = Entity.Slime(self.screen, self.images)
         self.player = Entity.Player(self.screen, self.images)
-        self.display = pygame.display.set_mode(self.screen.size)
+        if self.fullscreen:
+            self.display = pygame.display.set_mode(self.screen.size, pygame.FULLSCREEN)
+        else:
+            self.display = pygame.display.set_mode(self.screen.size)
 
     def createButtons(self, buttonTexts, mousePos, x, y, facing, maxPerRow):
         buttons = []
@@ -155,8 +160,72 @@ class Game:
         self.prevTime = now
         return deltaTime
     
+    def gameMenu(self):
+        from Resource.Data import menu_data
+        # 반투명 배경
+        alphaSurface = pygame.Surface(self.screen.size, pygame.SRCALPHA)
+        alphaSurface.fill((0, 0, 0, 128))
+        self.display.blit(alphaSurface, (0, 0))
+
+        running = True
+        while running:
+            mousePos = pygame.mouse.get_pos()
+            buttonTexts = menu_data.buttonTexts
+            buttons = self.createButtons(
+                buttonTexts,
+                mousePos,
+                self.screen.centerX,
+                self.screen.centerY,
+                "vertical",
+                1
+            )
+
+            for button in buttons:
+                rect = button["rect"]
+                bgColor = button["bgColor"]
+                surface = button["surface"]
+
+                # 버튼 배경 그리기
+                pygame.draw.rect(self.display, bgColor, rect, border_radius=10)
+                # 버튼 테두리 그리기 (검정색)
+                pygame.draw.rect(self.display, System.Color.black, rect, 3, border_radius=10)
+
+                # 텍스트 렌더링
+                self.display.blit(
+                    surface, 
+                    (
+                        rect.centerx - surface.get_width() // 2,
+                        rect.centery - surface.get_height() // 2
+                    )
+                )
+
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    self.inGame = False
+                    running = False
+                if event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_ESCAPE:
+                        running = False
+                if event.type == pygame.MOUSEBUTTONDOWN:
+                    for button in buttons:
+                        if button["rect"].collidepoint(event.pos):
+                            match button["id"]:
+                                case 0:
+                                    running = False
+                                case 1:
+                                    self.state = "title"
+                                    running = False
+                                case 2:
+                                    self.state = "quit"
+                                    running = False
+            
+            pygame.display.flip()
+    
     def gameSettings(self):
         from Resource.Data import settings_data
+        # Monitor Size
+        import tkinter as tk
+        root = tk.Tk()
         self.display.fill(System.Color.white)
 
         mousePos = pygame.mouse.get_pos()
@@ -181,6 +250,11 @@ class Game:
 
             if button["id"] == 3:
                 bgColor = System.Color.redorange
+            elif button["id"] == 4:
+                if self.fullscreen:
+                    bgColor = System.Color.green
+                else:
+                    bgColor = System.Color.red
 
             # 버튼 배경 그리기
             pygame.draw.rect(self.display, bgColor, rect, border_radius=10)
@@ -217,8 +291,31 @@ class Game:
                                 self.reset()
                             case 3:
                                 self.state = "title"
+                            case 4:
+                                if not self.fullscreen:
+                                    self.screen.width = root.winfo_screenwidth()
+                                    self.screen.height = root.winfo_screenheight()
+                                    self.fullscreen = not self.fullscreen
+                                else:
+                                    self.fullscreen = not self.fullscreen
+                                    self.reset()
+                                    self.screen.width = 1600
+                                    self.screen.height = 900
+                                self.reset()
     
     def game(self):
+        from Resource.Data import game_data
+        from Resource.Data import fight_data
+        mousePos = pygame.mouse.get_pos()
+        buttons = self.createButtons(
+            game_data.buttonTexts, 
+            mousePos,
+            self.screen.centerX,
+            self.screen.centerY + self.screen.centerY // 2,
+            "horizontal",
+            4
+        )
+
         self.handleEvents()
 
         if self.stage == "fboss":
@@ -228,16 +325,84 @@ class Game:
             background = "background_0"
             monster = "slime"
 
-
+        # Background
         self.display.blit(pygame.transform.scale(self.images[background], self.screen.size), (0, 0))
-        self.update(self.deltaTime)
+
+        # Render
         self.player.draw(self.display, self.deltaTime)
         self.monsters[monster].draw(self.display, self.deltaTime)
+        healthText = self.defaultFont.render(f"Player: {self.player.health}/100, {monster}: {self.monsters[monster].health}/100", True, System.Color.green)
+        self.display.blit(healthText, (self.screen.centerX // 2, self.screen.centerY))
+
+        # Effect
+        frameWidth = 64
+        frameHeight = 64
+
+        def tintSurface(surface, color):
+            tinted = surface.copy()
+            tinted.fill((0, 0, 0, 255), None, pygame.BLEND_RGBA_MULT)  # 기존 색 제거
+            tinted.fill(color[0:3] + (0,), None, pygame.BLEND_RGBA_ADD)  # 색상 추가
+            return tinted
+
+        EFFECT_FRAMES = {
+            "slash": [
+                tintSurface(self.images["skill_effect_slash"].subsurface(pygame.Rect(i * frameWidth, 0, frameWidth, frameHeight)), System.Color.red) for i in range(4)
+            ],
+            "pierce": [
+                tintSurface(self.images["skill_effect_pierce"].subsurface(pygame.Rect(i * frameWidth, 0, frameWidth, frameHeight)), System.Color.red) for i in range(5)
+            ],
+            "smash": [
+                tintSurface(self.images["skill_effect_smash"].subsurface(pygame.Rect(i * frameWidth, 0, frameWidth, frameHeight)), System.Color.red) for i in range(3)
+            ],
+        }
+
+        for effect in self.effects:
+            effect.update()
+
+        self.effects = [e for e in self.effects if not e.finished]
+
+        for effect in self.effects:
+            effect.draw(self.display)
+
+        for button in buttons:
+            rect = button["rect"]
+            bgColor = button["bgColor"]
+            surface = button["surface"]
+
+            # 버튼 배경 그리기
+            pygame.draw.rect(self.display, bgColor, rect, border_radius=10)
+            # 버튼 테두리 그리기 (검정색)
+            pygame.draw.rect(self.display, System.Color.black, rect, 3, border_radius=10)
+
+            # 텍스트 렌더링
+            self.display.blit(
+                surface, 
+                (
+                    rect.centerx - surface.get_width() // 2,
+                    rect.centery - surface.get_height() // 2
+                )
+            )
+        
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                self.inGame = False
+                pygame.quit()
+                sys.exit()
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                for button in buttons:
+                    if button["rect"].collidepoint(event.pos):
+                        match button["id"]:
+                            case 0:
+                                self.player.attack(self.monsters[monster], fight_data.attackType[0])
+                                self.effects.append(System.Effect(self.monsters[monster].x, self.monsters[monster].y, EFFECT_FRAMES["slash"]))
+                            case 1:
+                                self.player.attack(self.monsters[monster], fight_data.attackType[1])
+                                self.effects.append(System.Effect(self.monsters[monster].x, self.monsters[monster].y, EFFECT_FRAMES["pierce"]))
+                            case 2:
+                                self.player.attack(self.monsters[monster], fight_data.attackType[2])
+                                self.effects.append(System.Effect(self.monsters[monster].x, self.monsters[monster].y, EFFECT_FRAMES["smash"]))
 
         pygame.display.update()
-
-    def update(self, deltaTime):
-        pass
 
     def handleEvents(self):
         for event in pygame.event.get():
@@ -245,6 +410,9 @@ class Game:
                 self.inGame = False
                 pygame.quit()
                 sys.exit()
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_ESCAPE:
+                    self.gameMenu()
 
     def gameOver(self):
         pass
