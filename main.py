@@ -214,6 +214,7 @@ class Game:
                                     running = False
                                 case 1:
                                     self.state = "title"
+                                    self.reset()
                                     running = False
                                 case 2:
                                     self.state = "quit"
