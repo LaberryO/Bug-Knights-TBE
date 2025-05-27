@@ -26,7 +26,7 @@ class Game:
         self.effects = []
 
         self.turn = "player_turn"
-        self.stage = ""
+        self.stage = "fboss"
 
     def reset(self):
         self.monsters = {}
@@ -355,6 +355,15 @@ class Game:
             "smash": [
                 tintSurface(self.images["skill_effect_smash"].subsurface(pygame.Rect(i * frameWidth, 0, frameWidth, frameHeight)), System.Color.red) for i in range(3)
             ],
+            "healing": [
+                tintSurface(self.images["skill_effect_healing"].subsurface(pygame.Rect(i * frameWidth, 0, frameWidth, frameHeight)), System.Color.green) for i in range(4)
+            ],
+            "guard": [
+                tintSurface(self.images["skill_effect_guard"].subsurface(pygame.Rect(i * frameWidth, 0, frameWidth, frameHeight)), System.Color.blue) for i in range(6)
+            ],
+            "boss_slash": [
+                self.images["boss_skill_effect_slash"].subsurface(pygame.Rect(i * frameWidth, 0, frameWidth, frameHeight)) for i in range(4)
+            ],
         }
 
         for effect in self.effects:
@@ -383,6 +392,19 @@ class Game:
                     rect.centery - surface.get_height() // 2
                 )
             )
+
+        if self.turn == "monster_turn":
+            rd = random.randint(1,2)
+            match rd:
+                case 1:
+                    self.monsters[monster].attack(self.player, fight_data.attackType[0])
+                    self.effects.append(System.Effect(self.player.x, self.player.y, EFFECT_FRAMES["boss_slash"]))
+                case 2:
+                    self.monsters[monster].attack(self.player, fight_data.attackType[0])
+                    self.effects.append(System.Effect(self.player.x, self.player.y, EFFECT_FRAMES["boss_slash"]))
+                    print("DEBUG: BOSS_EXPLOSION")
+            self.turn = "player_turn"
+            
         
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -402,6 +424,15 @@ class Game:
                             case 2:
                                 self.player.attack(self.monsters[monster], fight_data.attackType[2])
                                 self.effects.append(System.Effect(self.monsters[monster].x, self.monsters[monster].y, EFFECT_FRAMES["smash"]))
+                            case 3:
+                                self.effects.append(System.Effect(self.player.x, self.player.y - self.player.height // 4, EFFECT_FRAMES["guard"]))
+                            case 4:
+                                self.player.health += random.randint(3,5)
+                                if self.player.health > 100:
+                                    self.player.health = 100
+                                self.effects.append(System.Effect(self.player.x, self.player.y - self.player.height // 4, EFFECT_FRAMES["healing"]))
+                            case 5:
+                                self.turn = "monster_turn"
 
         pygame.display.update()
 

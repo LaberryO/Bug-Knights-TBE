@@ -29,11 +29,11 @@ class Player:
         damage = random.randint(9, 15)
         if type == fight_data.attackType[0]:
             if target.armorType == fight_data.armorType[0]:
-                damage -= damage // 3
+                damage //= 3
         elif type == fight_data.attackType[1]:
             if target.armorType == fight_data.armorType[1]:
-                damage -= damage // 3      
+                damage //= 3
         elif type == fight_data.attackType[2]:
             if target.armorType == fight_data.armorType[2]:
-                damage -= damage // 3
+                damage //= 3
         target.health -= damage
