@@ -1,7 +1,7 @@
 import pygame
 
 class Effect:
-    def __init__(self, x, y, frames, frame_duration=5):
+    def __init__(self, x, y, frames, frame_duration=12):
         self.x = x
         self.y = y
         self.frames = frames
@@ -21,11 +21,11 @@ class Effect:
             if self.frame_index >= len(self.frames):
                 self.finished = True
 
-    def draw(self, surface):
+    def draw(self, display):
         if not self.finished:
             frame = self.frames[self.frame_index]
             w,h = frame.get_size()
             w *= 5
             h *= 5
             frame = pygame.transform.scale(frame, (int(w), int(h)))
-            surface.blit(frame, (self.x - w // 2, self.y - h // 3))
+            display.blit(frame, (self.x - w // 2, self.y - h // 3))
