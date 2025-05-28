@@ -333,37 +333,7 @@ class Game:
         healthText = self.defaultFont.render(f"Player: {self.player.health}/100, {monster}: {self.monsters[monster].health}/100", True, System.Color.green)
         self.display.blit(healthText, (self.screen.centerX // 2, self.screen.centerY))
 
-        # Effect
-        frameWidth = 64
-        frameHeight = 64
-
-        def tintSurface(surface, color):
-            tinted = surface.copy()
-            tinted.fill((0, 0, 0, 255), None, pygame.BLEND_RGBA_MULT)  # 기존 색 제거
-            tinted.fill(color[0:3] + (0,), None, pygame.BLEND_RGBA_ADD)  # 색상 추가
-            return tinted
-
-        EFFECT_FRAMES = {
-            "slash": [
-                tintSurface(self.images["skill_effect_slash"].subsurface(pygame.Rect(i * frameWidth, 0, frameWidth, frameHeight)), System.Color.red) for i in range(4)
-            ],
-            "pierce": [
-                tintSurface(self.images["skill_effect_pierce"].subsurface(pygame.Rect(i * frameWidth, 0, frameWidth, frameHeight)), System.Color.red) for i in range(5)
-            ],
-            "smash": [
-                tintSurface(self.images["skill_effect_smash"].subsurface(pygame.Rect(i * frameWidth, 0, frameWidth, frameHeight)), System.Color.red) for i in range(3)
-            ],
-            "healing": [
-                tintSurface(self.images["skill_effect_healing"].subsurface(pygame.Rect(i * frameWidth, 0, frameWidth, frameHeight)), System.Color.green) for i in range(4)
-            ],
-            "guard": [
-                tintSurface(self.images["skill_effect_guard"].subsurface(pygame.Rect(i * frameWidth, 0, frameWidth, frameHeight)), System.Color.blue) for i in range(6)
-            ],
-            "boss_slash": [
-                self.images["boss_skill_effect_slash"].subsurface(pygame.Rect(i * frameWidth, 0, frameWidth, frameHeight)) for i in range(4)
-            ],
-        }
-
+        # Effect 렌더
         for effect in self.effects:
             effect.update()
 
@@ -372,6 +342,7 @@ class Game:
         for effect in self.effects:
             effect.draw(self.display)
 
+        # 버튼 생성
         for button in buttons:
             rect = button["rect"]
             bgColor = button["bgColor"]
@@ -391,19 +362,22 @@ class Game:
                 )
             )
 
+        # Effect 정의
+        class monpos:
+            x = self.monsters[monster].x - self.monsters[monster].width // 8
+            y = self.monsters[monster].y
+
         if self.turn == "monster_turn":
             rd = random.randint(1,2)
             match rd:
                 case 1:
                     self.monsters[monster].attack(self.player, fight_data.attackType[0])
-                    self.effects.append(System.Effect(self.player.x, self.player.y, EFFECT_FRAMES["boss_slash"]))
+                    self.effects.append(System.Effect(self.player.x, self.player.y, self.EFFECT_FRAMES["boss_slash"]))
                 case 2:
-                    self.monsters[monster].attack(self.player, fight_data.attackType[0])
-                    self.effects.append(System.Effect(self.player.x, self.player.y, EFFECT_FRAMES["boss_slash"]))
-                    print("DEBUG: BOSS_EXPLOSION")
+                    self.monsters[monster].attack(self.player, fight_data.attackType[2])
+                    self.effects.append(System.Effect(self.player.x, self.player.y, self.EFFECT_FRAMES["boss_explosion"]))
             self.turn = "player_turn"
-            
-        
+
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 self.inGame = False
@@ -418,20 +392,20 @@ class Game:
                         match button["id"]:
                             case 0:
                                 self.player.attack(self.monsters[monster], fight_data.attackType[0])
-                                self.effects.append(System.Effect(self.monsters[monster].x, self.monsters[monster].y, EFFECT_FRAMES["slash"]))
+                                self.effects.append(System.Effect(monpos.x, monpos.y, self.EFFECT_FRAMES["slash"]))
                             case 1:
                                 self.player.attack(self.monsters[monster], fight_data.attackType[1])
-                                self.effects.append(System.Effect(self.monsters[monster].x, self.monsters[monster].y, EFFECT_FRAMES["pierce"]))
+                                self.effects.append(System.Effect(monpos.x, monpos.y, self.EFFECT_FRAMES["pierce"]))
                             case 2:
                                 self.player.attack(self.monsters[monster], fight_data.attackType[2])
-                                self.effects.append(System.Effect(self.monsters[monster].x, self.monsters[monster].y, EFFECT_FRAMES["smash"]))
+                                self.effects.append(System.Effect(monpos.x, monpos.y, self.EFFECT_FRAMES["smash"]))
                             case 3:
-                                self.effects.append(System.Effect(self.player.x, self.player.y - self.player.height // 4, EFFECT_FRAMES["guard"]))
+                                self.effects.append(System.Effect(self.player.x, self.player.y - self.player.height // 4, self.EFFECT_FRAMES["guard"]))
                             case 4:
                                 self.player.health += random.randint(3,5)
                                 if self.player.health > 100:
                                     self.player.health = 100
-                                self.effects.append(System.Effect(self.player.x, self.player.y - self.player.height // 4, EFFECT_FRAMES["healing"]))
+                                self.effects.append(System.Effect(self.player.x, self.player.y - self.player.height // 4, self.EFFECT_FRAMES["healing"]))
                             case 5:
                                 self.turn = "monster_turn"
 
@@ -505,6 +479,42 @@ class Game:
                 except pygame.error:
                     print(f"Image Load Failed: {filename}")
             time.sleep(0.02)
+
+        # Effect
+        frameWidth = 64
+        frameHeight = 64
+
+        def tintSurface(surface, color):
+            tinted = surface.copy()
+            tinted.fill((0, 0, 0, 255), None, pygame.BLEND_RGBA_MULT)  # 기존 색 제거
+            tinted.fill(color[0:3] + (0,), None, pygame.BLEND_RGBA_ADD)  # 색상 추가
+            return tinted
+
+        # Effect
+        self.EFFECT_FRAMES = {
+            "slash": [
+                tintSurface(self.images["skill_effect_slash"].subsurface(pygame.Rect(i * frameWidth, 0, frameWidth, frameHeight)), System.Color.red) for i in range(4)
+            ],
+            "pierce": [
+                tintSurface(self.images["skill_effect_pierce"].subsurface(pygame.Rect(i * frameWidth, 0, frameWidth, frameHeight)), System.Color.red) for i in range(5)
+            ],
+            "smash": [
+                tintSurface(self.images["skill_effect_smash"].subsurface(pygame.Rect(i * frameWidth, 0, frameWidth, frameHeight)), System.Color.red) for i in range(3)
+            ],
+            "healing": [
+                tintSurface(self.images["skill_effect_healing"].subsurface(pygame.Rect(i * frameWidth, 0, frameWidth, frameHeight)), System.Color.green) for i in range(4)
+            ],
+            "guard": [
+                tintSurface(self.images["skill_effect_guard"].subsurface(pygame.Rect(i * frameWidth, 0, frameWidth, frameHeight)), System.Color.blue) for i in range(6)
+            ],
+            "boss_slash": [
+                self.images["boss_skill_effect_slash"].subsurface(pygame.Rect(i * frameWidth, 0, frameWidth, frameHeight)) for i in range(4)
+            ],
+            "boss_explosion": [
+                self.images["boss_skill_effect_explosion"].subsurface(pygame.Rect(i * frameWidth, 0, frameWidth, frameHeight)) for i in range(3)
+            ],
+        }
+
         self.reset()
 
     def loadingScreen(self):
