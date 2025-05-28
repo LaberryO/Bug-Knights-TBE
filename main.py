@@ -317,8 +317,6 @@ class Game:
             4
         )
 
-        self.handleEvents()
-
         if self.stage == "fboss":
             background = "bossbackground_0"
             monster = "fboss"
@@ -411,6 +409,9 @@ class Game:
                 self.inGame = False
                 pygame.quit()
                 sys.exit()
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_ESCAPE:
+                    self.gameMenu()
             if event.type == pygame.MOUSEBUTTONDOWN:
                 for button in buttons:
                     if button["rect"].collidepoint(event.pos):
@@ -434,17 +435,7 @@ class Game:
                             case 5:
                                 self.turn = "monster_turn"
 
-        pygame.display.update()
-
-    def handleEvents(self):
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                self.inGame = False
-                pygame.quit()
-                sys.exit()
-            if event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_ESCAPE:
-                    self.gameMenu()
+        pygame.display.update()            
 
     def gameOver(self):
         pass
